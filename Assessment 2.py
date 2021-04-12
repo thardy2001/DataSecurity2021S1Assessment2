@@ -82,6 +82,10 @@ key = ""
 
 
 # https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks 
+
+''' 
+	Used to break up a binary string into n evenly sized chunks 
+'''
 def chunks(lst, n):
 	x = []
 	"""Yield successive n-sized chunks from lst."""
