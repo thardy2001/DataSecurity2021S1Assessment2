@@ -91,7 +91,6 @@ def chunks(lst, n):
 	"""Yield successive n-sized chunks from lst."""
 	for i in range(0, len(lst), n):
 		x.append(lst[i:i + n])
-	print(x)
 	return x 
 
 def IntTobinary(number, bits):
@@ -145,9 +144,6 @@ def expansionPermute(unexpanded):
 	expanded = "" 
 	for i in range(48):
 		expanded+=unexpanded[expansion_permute[i] - 1]
-
-
-	print("Result of Expansion permute:  " + expanded)
 	return expanded
 
 
@@ -189,22 +185,17 @@ def DESKeyGenerator(seed_key):
 
 	return key
     
-def F(key, right_text): 
-	print("The Key:                      " + key)
+def FDES0(key, right_text): 
 	return straightPermute(sBox(XOR(expansionPermute(right_text),key)))
 
 def FDES1(key, right_text): 
-	print("The Key:                      " + key)
 	return straightPermute(sBox(expansionPermute(right_text) ) )
 
 def sBox(value): 
 	numbers = chunks(value,6)
 	output = ""
-	print(type(numbers[1]))
 	for i in range(len(numbers)):
-		print("Six Bit Chunk: " + str(i) + " Content:   " + numbers[i])
 		output+= IntTobinary(sbox[i][int((numbers[i][0] + numbers[i][-1]),base=2)][int(numbers[i][1:-1], base = 2)], 6)
-	print("Result of SBoxs:   " + output)
 	return output
 
 
@@ -217,11 +208,11 @@ def DES0(p, k, num_of_rounds, block_size ):
 	right = p[len(p)//2:]
 
 	round_key = DESKeyGenerator(k)
-	print(round_key)
+
 	# Rounds 
 	for i in range(num_of_rounds): 
 		temp = right
-		right = XOR(left,F(round_key[i], right)	)
+		right = XOR(left,FDES0(round_key[i], right)	)
 		left = temp 
 
 	# Final Swap to ensure encrypt = decrypt 
@@ -240,7 +231,6 @@ def DES1(p, k, num_of_rounds, block_size ):
 	right = p[len(p)//2:]
 
 	round_key = DESKeyGenerator(k)
-	print(round_key)
 	# Rounds 
 	for i in range(num_of_rounds): 
 		temp = right
@@ -261,4 +251,7 @@ key = file.readline()
 file.close()
 plaintext = plaintext.rstrip("\n")
 key = key.rstrip("\n")
-print("Plaintext: " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:  " + DES0(plaintext,key,16,64))
+print("DES0:\n")
+print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:     " + DES0(plaintext,key,16,64) + "\n\n")
+print("DES1:\n")
+print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:     " + DES1(plaintext,key,16,64) + "\n\n")
