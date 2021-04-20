@@ -119,6 +119,7 @@ def XOR(x,y):
 				result+= "0"
 			else:
 				result+="1"
+		print("				   XOR: 						  	  " + result)
 		return result
 
 def leftShift(number, shifts):
@@ -143,7 +144,10 @@ def compressionPermute(uncompressed):
 def expansionPermute(unexpanded):
 	expanded = "" 
 	for i in range(48):
-		expanded+=unexpanded[expansion_permute[i] - 1]
+		x = expansion_permute[i] - 1
+		expanded+=unexpanded[x]
+	print("				   Expansion permutation: 		  	  " + expanded)
+
 	return expanded
 
 
@@ -151,6 +155,8 @@ def straightPermute(original):
 	permuted = ""
 	for i in range(32):
 		permuted+=original[straight_permute[i] - 1]
+
+	print("				   Straight Permute: 				  " + permuted)
 	return permuted
 
 def initialPermute(original):
@@ -196,24 +202,39 @@ def sBox(value):
 	output = ""
 	for i in range(len(numbers)):
 		output+= IntTobinary(sbox[i][int((numbers[i][0] + numbers[i][-1]),base=2)][int(numbers[i][1:-1], base = 2)], 6)
+
+	print("				   SBOX: 						  	  " + output)
 	return output
 
 
 
 def DES0(p, k, num_of_rounds, block_size ): 
-
+	print("plaintext:           " + p)
 	p = initialPermute(p)
-
+	print("Initial permutation: " + p)
+	
 	left = p[:len(p)//2]
 	right = p[len(p)//2:]
-
-	round_key = DESKeyGenerator(k)
-
+	k = parityDrop(k)
+	print("Parity Dropped Key: " + k)
+	left_key = k[:len(k)//2]
+	right_key = k[len(k)//2:]	
 	# Rounds 
-	for i in range(num_of_rounds): 
+	for i in range(num_of_rounds):
+		print("		Round " + str(i + 1) + ": ") 
+
+		#calculate round key 
+		left_key = leftShift(left_key, left_shift_table[i]) 
+		right_key = leftShift(right_key, left_shift_table[i])
+		round_key = compressionPermute(left+right)
+		print('Round Key:         ' + round_key )
+
 		temp = right
-		right = XOR(left,FDES0(round_key[i], right)	)
+		print("Pre-round Text:    " + left + "   " + right + "\n")
+		
+		right = XOR(left,FDES0(round_key, right))
 		left = temp 
+		print("Post-round Text:   " + left + "   " + right + "\n")
 
 	# Final Swap to ensure encrypt = decrypt 
 	temp = left
@@ -221,6 +242,8 @@ def DES0(p, k, num_of_rounds, block_size ):
 	right = temp 
 	
 	output = finalPermute(left+right)
+	print("Final Permutation: " + output + "\n\n")
+
 	return output
 
 def DES1(p, k, num_of_rounds, block_size ): 
@@ -247,6 +270,7 @@ def DES1(p, k, num_of_rounds, block_size ):
 
 file = open("input.txt", "r")
 plaintext = file.readline()
+
 key = file.readline()
 file.close()
 plaintext = plaintext.rstrip("\n")
