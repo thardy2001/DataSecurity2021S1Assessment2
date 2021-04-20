@@ -143,7 +143,8 @@ def compressionPermute(uncompressed):
 def expansionPermute(unexpanded):
 	expanded = "" 
 	for i in range(48):
-		expanded+=unexpanded[expansion_permute[i] - 1]
+		x = expansion_permute[i] - 1
+		expanded+=unexpanded[x]
 	return expanded
 
 
@@ -207,12 +208,17 @@ def DES0(p, k, num_of_rounds, block_size ):
 	left = p[:len(p)//2]
 	right = p[len(p)//2:]
 
-	round_key = DESKeyGenerator(k)
-
+	k = parityDrop(k)
+	left_key = k[:len(k)//2]
+	right_key = k[len(k)//2:]	
 	# Rounds 
 	for i in range(num_of_rounds): 
 		temp = right
-		right = XOR(left,FDES0(round_key[i], right)	)
+		#calculate round key 
+		left_key = leftShift(left_key, left_shift_table[i]) 
+		right_key = leftShift(right_key, left_shift_table[i])
+
+		right = XOR(left,FDES0(compressionPermute(left+right), right)	)
 		left = temp 
 
 	# Final Swap to ensure encrypt = decrypt 
