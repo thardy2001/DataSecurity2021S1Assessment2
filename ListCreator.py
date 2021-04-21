@@ -1,6 +1,6 @@
 import pyperclip
 
-file = open("input.txt", "r")
+file = open("list.txt", "r")
 
 lines = file.readlines()
 
