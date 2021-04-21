@@ -1,16 +1,26 @@
-file = open("input.txt", "r")
+import pyperclip
+
+file = open("list.txt", "r")
 
 lines = file.readlines()
 
 array = []
+
+flatten = True
 
 for line in lines:
     str_list = line.strip().replace("\t", " ").split(" ")
 
     int_list = list(map(int, str_list))
 
-    array.append(int_list)
+    if not flatten:
+        array.append(int_list)
+    else:
+        for i in int_list:
+            array.append(i)
 
+pyperclip.copy(str(array))
+print("copied to clipboard")
 print(array)
 
 """
