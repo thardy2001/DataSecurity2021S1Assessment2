@@ -204,6 +204,7 @@ def sBox(value):
 		output+= IntTobinary(sbox[i][int((numbers[i][0] + numbers[i][-1]),base=2)][int(numbers[i][1:-1], base = 2)], 6)
 
 	print("				   SBOX: 						  	  " + output)
+	print(len(output))
 	return output
 
 
@@ -226,7 +227,7 @@ def DES0(p, k, num_of_rounds, block_size ):
 		#calculate round key 
 		left_key = leftShift(left_key, left_shift_table[i]) 
 		right_key = leftShift(right_key, left_shift_table[i])
-		round_key = compressionPermute(left+right)
+		round_key = compressionPermute(left_key+right_key)
 		print('Round Key:         ' + round_key )
 
 		temp = right
