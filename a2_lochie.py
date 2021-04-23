@@ -66,12 +66,7 @@ def left_circular(value, n):
     return value[n:]+value[:n]
 
 
-def split(string):
-    half = int(len(string)/2)
-    return string[:half], string[half:]
-
-
-def generate_keys(key, rounds):
+def generate_keys(key, rounds, verbose=False):
     # split key using permutation choice 1
     left_key = permute(key, choice1_left)
     right_key = permute(key, choice1_right)
@@ -87,7 +82,7 @@ def generate_keys(key, rounds):
     return round_keys
 
 
-def des(plaintext, key, rounds, encrypt=True):
+def des0(plaintext, key, rounds, encrypt=True, log_level=0):
 
     round_keys = generate_keys(key, rounds)
 
@@ -95,9 +90,14 @@ def des(plaintext, key, rounds, encrypt=True):
     if not encrypt:
         round_keys = round_keys[::-1]
 
-    left, right = split(plaintext)
+    init_permute = permute(plaintext, initial)
+
+    left = init_permute[:len(init_permute)//2]
+    right = init_permute[len(init_permute)//2:]
 
     for i in range(rounds):
+        start = left+right
+
         # Expansion/permutation (E table)
         e_permutation = permute(right, expansion)
         # XOR with round key
@@ -113,8 +113,24 @@ def des(plaintext, key, rounds, encrypt=True):
         left = right
         right = round_end
 
-    # switch left and right one last time and output
-    return right + left
+        # logging
+        if log_level > 0:
+            print("\npre", i, ":", start)
+            print("key", i, ":", round_keys[i])
+        if log_level > 1:
+            print("exp", i, ":", e_permutation)
+            print("xor", i, ":", XOR)
+            print("sbx", i, ":", s_permutation)
+            print("prm", i, ":", permuted)
+        if log_level > 0:
+            print("end", i, ":", left+right)
+
+    # switch left and right one last time
+    flipped = right+left
+
+    final_permute = permute(flipped, final)
+
+    return final_permute
 
 
 file = open("input.txt", "r")
@@ -122,9 +138,11 @@ plaintext = file.readline().rstrip("\n")
 key = file.readline().rstrip("\n")
 file.close()
 
-ciphertext = des(plaintext, key, 16, encrypt=True)
-recovered_text = des(ciphertext, key, 16, encrypt=False)
-
+print("ENCRYPT")
+ciphertext = des0(plaintext=plaintext, key=key, rounds=16, encrypt=True, log_level=1)
+print("\nDECRYPT")
+recovered_text = des0(plaintext=ciphertext, key=key, rounds=16, encrypt=False, log_level=0)
+print("\nSUMMARY")
 print("plaintext:           ", plaintext)
 print("recovered plaintext: ", recovered_text)
 print("plaintexts match:    ", plaintext == recovered_text)
