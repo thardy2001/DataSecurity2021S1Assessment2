@@ -233,41 +233,64 @@ def sBox(value):
 
 
 
-def DES0(p, k, num_of_rounds, block_size ): 
+def DES0(p, k, num_of_rounds, block_size,encrypt = True ): 
 	print("plaintext:           " + p)
 	p = initialPermute(p)
 	print("Initial permutation: " + p)
 	
 	left = p[:len(p)//2]
 	right = p[len(p)//2:]
-	k = parityDrop(k)
+	if not encrypt: 
+		round_keys = DESKeyGenerator(k)[::-1]
+
 	print("Parity Dropped Key: " + k)
 	left_key = k[:len(k)//2]
 	right_key = k[len(k)//2:]	
 	# Rounds 
-	for i in range(num_of_rounds):
-		print("		Round " + str(i + 1) + ": ") 
+	if encrypt: 
+		k = parityDrop(k)
+		for i in range(num_of_rounds):
+			print("		Round " + str(i + 1) + ": ") 
 
-		#calculate round key 
-		left_key = leftShift(left_key, left_shift_table[i]) 
-		right_key = leftShift(right_key, left_shift_table[i])
-		round_key = compressionPermute(left_key+right_key)
-		print('Round Key:         ' + round_key )
+			#calculate round key 
+			left_key = leftShift(left_key, left_shift_table[i]) 
+			right_key = leftShift(right_key, left_shift_table[i])
+			round_key = compressionPermute(left_key+right_key)
+			print('Round Key:         ' + round_key )
 
-		temp = right
-		print("Pre-round Text:    " + left + "   " + right + "\n")
+			temp = right
+			print("Pre-round Text:    " + left + "   " + right + "\n")
+			
+			right = XOR(left,FDES0(round_key, right))
+			left = temp 
+			print("Post-round Text:   " + left + "   " + right + "\n")
+
+		# Final Swap to ensure encrypt = decrypt 
+		temp = left
+		left = right
+		right = temp 
 		
-		right = XOR(left,FDES0(round_key, right))
-		left = temp 
-		print("Post-round Text:   " + left + "   " + right + "\n")
+		output = finalPermute(left+right)
+		print("Final Permutation: " + output + "\n\n")
+	else:
+		for i in range(num_of_rounds):
+			print("		Round " + str(i + 1) + ": ") 
+			round_key = round_keys[i]
+			temp = right
+			print("Pre-round Text:    " + left + "   " + right + "\n")
+			
+			right = XOR(left,FDES0(round_key, right))
+			left = temp 
+			print("Post-round Text:   " + left + "   " + right + "\n")
 
-	# Final Swap to ensure encrypt = decrypt 
-	temp = left
-	left = right
-	right = temp 
-	
-	output = finalPermute(left+right)
-	print("Final Permutation: " + output + "\n\n")
+		# Final Swap to ensure encrypt = decrypt 
+		temp = left
+		left = right
+		right = temp 
+		
+		output = finalPermute(left+right)
+		print("Final Permutation: " + output + "\n\n")
+
 
 	return output
 
@@ -377,7 +400,7 @@ key = key.rstrip("\n")
 print("DES0:\n")
 ciphertext = DES0(plaintext,key,16,64)
 print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:     " + ciphertext + "\n\n")
-
+print("DECRYPED: " +  DES0(ciphertext,key,16,64,False))
 
 
 print("DES1 ( No XOR Operation with key):\n")
