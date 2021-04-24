@@ -244,11 +244,11 @@ def DES0(p, k, num_of_rounds, block_size,encrypt = True ):
 		round_keys = DESKeyGenerator(k)[::-1]
 
 	print("Parity Dropped Key: " + k)
+	k = parityDrop(k)
 	left_key = k[:len(k)//2]
 	right_key = k[len(k)//2:]	
 	# Rounds 
 	if encrypt: 
-		k = parityDrop(k)
 		for i in range(num_of_rounds):
 			print("		Round " + str(i + 1) + ": ") 
 
@@ -400,8 +400,8 @@ key = key.rstrip("\n")
 print("DES0:\n")
 ciphertext = DES0(plaintext,key,16,64)
 print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:     " + ciphertext + "\n\n")
-print("DECRYPED: " +  DES0(ciphertext,key,16,64,False))
-
+plain_prime = DES0(ciphertext, key, 16, 64, False)
+print("DECRYPTED: " + plain_prime)
 
 print("DES1 ( No XOR Operation with key):\n")
 print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:     " + DES1(plaintext,key,16,64) + "\n\n")
@@ -410,3 +410,8 @@ print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Cip
 print("DES3 ( NO P Permutation:\n")
 print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:     " + DES3(plaintext,key,16,64) + "\n\n")
 
+# optional debug code
+print("DES0 Checks")
+print("encryption successful: ", ciphertext == "0000111000011011110001011111000110001010001110110001101010001011")
+print("Decryption successful: ", plaintext == plain_prime)
+# end optional debug code
