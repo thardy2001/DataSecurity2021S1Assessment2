@@ -42,7 +42,7 @@ def s_box(value, boxes):
     out = ""
     for i in range(len(chunks)):
         # get column from middle 4 bits
-        column = int(chunks[i][1:-2], 2)
+        column = int(chunks[i][1:-1], 2)
         # get row from first and last bits
         row = int(chunks[i][0]+chunks[i][-1], 2)
 
