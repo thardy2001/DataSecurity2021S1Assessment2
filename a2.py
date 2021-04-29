@@ -334,3 +334,4 @@ print("DES0 Checks")
 print("encryption successful: ", ciphertext == "0000111000011011110001011111000110001010001110110001101010001011")
 print("Decryption successful: ", plaintext == plain_prime)
 # end optional debug code
+
