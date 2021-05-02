@@ -227,6 +227,7 @@ def columnar(strings):
     return out
 
 
+# read plaintext and key
 file = open("input.txt", "r")
 plaintext = file.readline().rstrip("\n")
 key = file.readline().rstrip("\n")
@@ -234,16 +235,21 @@ file.close()
 
 print("ENCRYPTION")
 
-start_time = time.time()
+start_time = time.perf_counter()
+# encrypt the plaintext using the key with DES0
 ciphertext, rounds = des(plaintext=plaintext, key=key, variant=0)
+stop_time = time.perf_counter()
+
 print("Plaintext P:  ", plaintext)
 print("Key K:        ", key)
 print("Ciphertext C: ", ciphertext)
-print("Running time: ", time.time() - start_time, "seconds")
+print("Running time: ", stop_time - start_time, "seconds")
 
 print("\nAvalanche:")
 
+# generate the plaintext and key permutations
 plain_perms, key_perms = generate_permutations(plaintext, key)
+# perform all avalanche tests
 diffs = [full_avalanche(plain_perms, key_perms, i) for i in range(4)]
 
 print("\nP and Pi under K")
