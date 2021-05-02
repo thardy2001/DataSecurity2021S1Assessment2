@@ -1,7 +1,7 @@
 import numpy as np
+import time
 
 # All permutation / substitution tables
-
 initial = np.array([58, 50, 42, 34, 26, 18, 10, 2, 60, 52, 44, 36, 28, 20, 12, 4, 62, 54, 46, 38, 30, 22, 14, 6, 64, 56, 48, 40, 32, 24, 16, 8, 57, 49, 41, 33, 25, 17, 9, 1, 59, 51, 43, 35, 27, 19, 11, 3, 61, 53, 45, 37, 29, 21, 13, 5, 63, 55, 47, 39, 31, 23, 15, 7])
 final = np.array([40, 8, 48, 16, 56, 24, 64, 32, 39, 7, 47, 15, 55, 23, 63, 31, 38, 6, 46, 14, 54, 22, 62, 30, 37, 5, 45, 13, 53, 21, 61, 29, 36, 4, 44, 12, 52, 20, 60, 28, 35, 3, 43, 11, 51, 19, 59, 27, 34, 2, 42, 10, 50, 18, 58, 26, 33, 1, 41, 9, 49, 17, 57, 25])
 expansion = np.array([32, 1, 2, 3, 4, 5, 4, 5, 6, 7, 8, 9, 8, 9, 10, 11, 12, 13, 12, 13, 14, 15, 16, 17, 16, 17, 18, 19, 20, 21, 20, 21, 22, 23, 24, 25, 24, 25, 26, 27, 28, 29, 28, 29, 30, 31, 32, 1])
@@ -83,8 +83,7 @@ def generate_keys(key, rounds, verbose=False):
     return round_keys
 
 
-def des0(plaintext, key, rounds=16, encrypt=True, log_level=0):
-
+def des(plaintext, key, variant=0, rounds=16, encrypt=True, log_level=0):
     round_keys = generate_keys(key, rounds)
 
     # If decrypting, reverse round keys
@@ -101,32 +100,50 @@ def des0(plaintext, key, rounds=16, encrypt=True, log_level=0):
     for i in range(rounds):
         start = left+right
 
+        if log_level > 0:
+            print("\npre", i, ":", start)
+            print("key", i, ":", round_keys[i])
+
         # Expansion/permutation (E table)
-        e_permutation = permute(right, expansion)
+        f = permute(right, expansion)
+        if log_level > 1:
+            print("exp", i, ":", f)
+
         # XOR with round key
-        XOR = xor(e_permutation, round_keys[i])
+        # skip for DES1
+        if not variant == 1:
+            f = xor(f, round_keys[i])
+            if log_level > 1:
+                print("xor", i, ":", f)
+
         # Substitution/choice (S-box)
-        s_permutation = s_box(XOR, s_boxes)
+        # use inverse expansion for des2 and sbox for other variants
+        if not variant == 2:
+            f = s_box(f, s_boxes)
+            if log_level > 1:
+                print("sbx", i, ":", f)
+        else:
+            f = permute(f, expansion_inv)
+            if log_level > 1:
+                print("e-1", i, ":", f)
+
         # Permutation (P)
-        permuted = permute(s_permutation, straight)
+        # skip for DES3
+        if not variant == 3:
+            f = permute(f, straight)
+            if log_level > 1:
+                print("prm", i, ":", f)
+
         # XOR with left
-        round_end = xor(permuted, left)
+        round_end = xor(f, left)
 
         # switch sides
         left = right
         right = round_end
 
+        """ This order might be wrong. Not 100% sure. Won't affect avalanche results but might get marked down """
         round_texts.append(left + right)
 
-        # logging
-        if log_level > 0:
-            print("\npre", i, ":", start)
-            print("key", i, ":", round_keys[i])
-        if log_level > 1:
-            print("exp", i, ":", e_permutation)
-            print("xor", i, ":", XOR)
-            print("sbx", i, ":", s_permutation)
-            print("prm", i, ":", permuted)
         if log_level > 0:
             print("end", i, ":", left+right)
 
@@ -159,49 +176,87 @@ def avalanche(base_rounds, all_permuted_rounds):
     return avg
 
 
+def generate_permutations(plaintext, key):
+    # create all off-by-one permutations of plaintext
+    plain_perms = []
+    for i in range(len(plaintext)):
+        # start with plaintext as list
+        perm = list(plaintext)
+        # flip bit i
+        perm[i] = '1' if plaintext[i] == '0' else '0'
+        # convert back to list and append
+        plain_perms.append("".join(perm))
+
+    # create all off-by-one strings of key
+    key_perms = []
+    for i in range(len(key)):
+        # skip parity dropped bits
+        if i + 1 not in drop_permutation:
+            continue
+        # start with plaintext as list
+        perm = list(key)
+        # flip bit i
+        perm[i] = '1' if key[i] == '0' else '0'
+        # convert back to list and append
+        key_perms.append("".join(perm))
+
+    return plain_perms, key_perms
+
+
+def full_avalanche(plain_perms, key_perms, des_variant):
+    # compute round outputs for original plaintext
+    base_cipher, base_rounds = des(plaintext, key, des_variant)
+
+    # compute round outputs for each plaintext variant
+    plain_perm_rounds = [des(plain_perms[i], key, des_variant)[1] for i in range(len(plain_perms))]
+    # perform avalanche tests comparing the rounds from each plaintext variant with the rounds of the base plaintext
+    plain_avg_diff = avalanche(base_rounds, plain_perm_rounds)
+
+    # compute round outputs for each key variant
+    key_perm_rounds = [des(plaintext, key_perms[i], des_variant)[1] for i in range(len(key_perms))]
+    # perform avalanche tests comparing the rounds from each key variant with the rounds of the base key
+    key_avg_diff = avalanche(base_rounds, key_perm_rounds)
+
+    return plain_avg_diff, key_avg_diff
+
+
+def columnar(strings):
+    out = ""
+    for string in strings:
+        out += "{:<6}".format(string)
+    return out
+
+
 file = open("input.txt", "r")
 plaintext = file.readline().rstrip("\n")
 key = file.readline().rstrip("\n")
 file.close()
 
-# create all off-by-one permutations of plaintext
-plain_perms = []
-for i in range(len(plaintext)):
-    # start with plaintext as list
-    perm = list(plaintext)
-    # flip bit i
-    perm[i] = '1' if plaintext[i] == '0' else '0'
-    # convert back to list and append
-    plain_perms.append("".join(perm))
+print("ENCRYPTION")
 
-# create all off-by-one strings of key
-key_perms = []
-for i in range(len(key)):
-    # skip parity dropped bits
-    if i+1 not in drop_permutation:
-        continue
-    # start with plaintext as list
-    perm = list(key)
-    # flip bit i
-    perm[i] = '1' if key[i] == '0' else '0'
-    # convert back to list and append
-    key_perms.append("".join(perm))
+start_time = time.time()
+ciphertext, rounds = des(plaintext=plaintext, key=key, variant=0)
+print("Plaintext P:  ", plaintext)
+print("Key K:        ", key)
+print("Ciphertext C: ", ciphertext)
+print("Running time: ", time.time() - start_time, "seconds")
 
-# compute round outputs for original plaintext
-base_cipher, base_rounds = des0(plaintext=plaintext, key=key)
+print("\nAvalanche:")
 
-# compute round outputs for each plaintext variant
-plain_perm_rounds = [des0(plain_perms[i], key)[1] for i in range(len(plain_perms))]
-# perform avalanche tests comparing the rounds from each plaintext variant with the rounds of the base plaintext
-plain_avg_diff = avalanche(base_rounds, plain_perm_rounds)
+plain_perms, key_perms = generate_permutations(plaintext, key)
+diffs = [full_avalanche(plain_perms, key_perms, i) for i in range(4)]
 
-# compute round outputs for each key variant
-key_perm_rounds = [des0(plaintext, key_perms[i])[1] for i in range(len(key_perms))]
-# perform avalanche tests comparing the rounds from each key variant with the rounds of the base key
-key_avg_diff = avalanche(base_rounds, key_perm_rounds)
+print("\nP and Pi under K")
+print(columnar(["Round", "DES0", "DES1", "DES2", "DES3"]))
+print(columnar(["0"]))
+for i in range(16):
+    print(columnar([i+1, round(diffs[0][0][i]), round(diffs[1][0][i]), round(diffs[2][0][i]), round(diffs[3][0][i])]))
 
-print(plain_avg_diff)
-print(key_avg_diff)
+print("\nP under K and Ki")
+print(columnar(["Round", "DES0", "DES1", "DES2", "DES3"]))
+print("0 NEED TO FIX")
+for i in range(16):
+    print(columnar([i+1, round(diffs[0][1][i]), round(diffs[1][1][i]), round(diffs[2][1][i]), round(diffs[3][1][i])]))
 
 """
 print("ENCRYPT")
