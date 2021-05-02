@@ -95,7 +95,7 @@ def des(plaintext, key, variant=0, rounds=16, encrypt=True, log_level=0):
     left = init_permute[:len(init_permute)//2]
     right = init_permute[len(init_permute)//2:]
 
-    round_texts = []
+    round_texts = [plaintext]
 
     for i in range(rounds):
         start = left+right
@@ -248,24 +248,10 @@ diffs = [full_avalanche(plain_perms, key_perms, i) for i in range(4)]
 
 print("\nP and Pi under K")
 print(columnar(["Round", "DES0", "DES1", "DES2", "DES3"]))
-print(columnar(["0"]))
-for i in range(16):
-    print(columnar([i+1, round(diffs[0][0][i]), round(diffs[1][0][i]), round(diffs[2][0][i]), round(diffs[3][0][i])]))
+for i in range(len(diffs[0][0])):
+    print(columnar([i, round(diffs[0][0][i]), round(diffs[1][0][i]), round(diffs[2][0][i]), round(diffs[3][0][i])]))
 
 print("\nP under K and Ki")
 print(columnar(["Round", "DES0", "DES1", "DES2", "DES3"]))
-print("0 NEED TO FIX")
-for i in range(16):
-    print(columnar([i+1, round(diffs[0][1][i]), round(diffs[1][1][i]), round(diffs[2][1][i]), round(diffs[3][1][i])]))
-
-"""
-print("ENCRYPT")
-ciphertext = des0(plaintext=plaintext, key=key, rounds=16, encrypt=True, log_level=1)
-print("\nDECRYPT")
-recovered_text = des0(plaintext=ciphertext, key=key, rounds=16, encrypt=False, log_level=0)
-print("\nSUMMARY")
-print("plaintext:           ", plaintext)
-print("recovered plaintext: ", recovered_text)
-print("plaintexts match:    ", plaintext == recovered_text)
-print("ciphertext:          ", ciphertext)
-"""
+for i in range(len(diffs[0][1])):
+    print(columnar([i, round(diffs[0][1][i]), round(diffs[1][1][i]), round(diffs[2][1][i]), round(diffs[3][1][i])]))
