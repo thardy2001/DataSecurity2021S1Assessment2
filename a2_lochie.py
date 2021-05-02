@@ -138,6 +138,27 @@ def des0(plaintext, key, rounds=16, encrypt=True, log_level=0):
     return final_permute, round_texts
 
 
+def avalanche(base_rounds, all_permuted_rounds):
+    all_diff_sums = np.zeros([len(all_permuted_rounds), len(base_rounds)])
+    # perform avalanche test on each permutation
+    for i in range(len(all_permuted_rounds)):
+        permuted_rounds = all_permuted_rounds[i]
+        diff_sums = []
+        for j in range(len(base_rounds)):
+            # compute the bitwise difference between the base rounds and permuted rounds
+            bit_diff = xor(base_rounds[j], permuted_rounds[j])
+            # convert to a list of ints
+            list_diff = list(map(int, list(bit_diff)))
+            # if bits are different, the output is 1 so we can sum this list to get the number of different bits
+            diff_sums.append(sum(list_diff))
+        all_diff_sums[i] = diff_sums
+
+    # average all tests
+    avg = sum(all_diff_sums)/len(all_diff_sums)
+
+    return avg
+
+
 file = open("input.txt", "r")
 plaintext = file.readline().rstrip("\n")
 key = file.readline().rstrip("\n")
@@ -166,24 +187,21 @@ for i in range(len(key)):
     # convert back to list and append
     key_perms.append("".join(perm))
 
+# compute round outputs for original plaintext
 base_cipher, base_rounds = des0(plaintext=plaintext, key=key)
 
-diffs = np.zeros([len(plain_perms), len(base_rounds)])
-# perform avalanche test on each permutation
-for i in range(len(plain_perms)):
-    cipher, rounds = des0(plaintext=plain_perms[i], key=key)
-    diff = []
-    for j in range(len(base_rounds)):
-        diff_bits = xor(base_rounds[j], rounds[j])
-        int_list = list(map(int, list(diff_bits)))
-        diff_total = sum(int_list)
-        diff.append(diff_total)
-    diffs[i] = diff
+# compute round outputs for each plaintext variant
+plain_perm_rounds = [des0(plain_perms[i], key)[1] for i in range(len(plain_perms))]
+# perform avalanche tests comparing the rounds from each plaintext variant with the rounds of the base plaintext
+plain_avg_diff = avalanche(base_rounds, plain_perm_rounds)
 
-# average all tests
-avgs = sum(diffs)/len(diffs)
+# compute round outputs for each key variant
+key_perm_rounds = [des0(plaintext, key_perms[i])[1] for i in range(len(key_perms))]
+# perform avalanche tests comparing the rounds from each key variant with the rounds of the base key
+key_avg_diff = avalanche(base_rounds, key_perm_rounds)
 
-print(avgs)
+print(plain_avg_diff)
+print(key_avg_diff)
 
 """
 print("ENCRYPT")
