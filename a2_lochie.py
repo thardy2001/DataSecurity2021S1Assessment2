@@ -83,7 +83,7 @@ def generate_keys(key, rounds, verbose=False):
     return round_keys
 
 
-def des0(plaintext, key, rounds, encrypt=True, log_level=0):
+def des0(plaintext, key, rounds=16, encrypt=True, log_level=0):
 
     round_keys = generate_keys(key, rounds)
 
@@ -95,6 +95,8 @@ def des0(plaintext, key, rounds, encrypt=True, log_level=0):
 
     left = init_permute[:len(init_permute)//2]
     right = init_permute[len(init_permute)//2:]
+
+    round_texts = []
 
     for i in range(rounds):
         start = left+right
@@ -114,6 +116,8 @@ def des0(plaintext, key, rounds, encrypt=True, log_level=0):
         left = right
         right = round_end
 
+        round_texts.append(left + right)
+
         # logging
         if log_level > 0:
             print("\npre", i, ":", start)
@@ -131,7 +135,7 @@ def des0(plaintext, key, rounds, encrypt=True, log_level=0):
 
     final_permute = permute(flipped, final)
 
-    return final_permute
+    return final_permute, round_texts
 
 
 file = open("input.txt", "r")
@@ -139,6 +143,49 @@ plaintext = file.readline().rstrip("\n")
 key = file.readline().rstrip("\n")
 file.close()
 
+# create all off-by-one permutations of plaintext
+plain_perms = []
+for i in range(len(plaintext)):
+    # start with plaintext as list
+    perm = list(plaintext)
+    # flip bit i
+    perm[i] = '1' if plaintext[i] == '0' else '0'
+    # convert back to list and append
+    plain_perms.append("".join(perm))
+
+# create all off-by-one strings of key
+key_perms = []
+for i in range(len(key)):
+    # skip parity dropped bits
+    if i+1 not in drop_permutation:
+        continue
+    # start with plaintext as list
+    perm = list(key)
+    # flip bit i
+    perm[i] = '1' if key[i] == '0' else '0'
+    # convert back to list and append
+    key_perms.append("".join(perm))
+
+base_cipher, base_rounds = des0(plaintext=plaintext, key=key)
+
+diffs = np.zeros([len(plain_perms), len(base_rounds)])
+# perform avalanche test on each permutation
+for i in range(len(plain_perms)):
+    cipher, rounds = des0(plaintext=plain_perms[i], key=key)
+    diff = []
+    for j in range(len(base_rounds)):
+        diff_bits = xor(base_rounds[j], rounds[j])
+        int_list = list(map(int, list(diff_bits)))
+        diff_total = sum(int_list)
+        diff.append(diff_total)
+    diffs[i] = diff
+
+# average all tests
+avgs = sum(diffs)/len(diffs)
+
+print(avgs)
+
+"""
 print("ENCRYPT")
 ciphertext = des0(plaintext=plaintext, key=key, rounds=16, encrypt=True, log_level=1)
 print("\nDECRYPT")
@@ -148,3 +195,4 @@ print("plaintext:           ", plaintext)
 print("recovered plaintext: ", recovered_text)
 print("plaintexts match:    ", plaintext == recovered_text)
 print("ciphertext:          ", ciphertext)
+"""
