@@ -26,7 +26,9 @@ expansion_permute =[
 						20,21,22,23,24,25,
 						24,25,26,27,28,29,
 						28,29,30,31,32, 1      ]
+
 inverse_expansion_permute = [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 20, 21, 22, 23, 26, 27, 28, 29, 32, 33, 34, 35, 38, 39, 40, 41, 44, 45, 46, 47]
+
 compression_permute =[ 	
 						14,17,11,24, 1, 5, 3,28,
 						15, 6,21,10,23,19,12, 4,
@@ -237,9 +239,9 @@ def FDES3(key, right_text): # Removed straight permutation
 
 def DES(p, k, num_of_rounds, block_size, ver=0, encrypt=True, avalanche=False):
 	partial_ciphers = [None]*16
-	partial = [None]*16
+	partial = None
 	if(avalanche):
-		partial = DES(p,k,num_of_rounds, ver, True, False)[2]
+		partial = DES(plaintext,key,num_of_rounds,block_size, ver, True, False)[2]
 
 
 	round_keys = DESKeyGenerator(k)
@@ -287,62 +289,61 @@ def DES(p, k, num_of_rounds, block_size, ver=0, encrypt=True, avalanche=False):
 def AvalancheAnalysis(plaintexts,key):
 
 	# With different plaintexts
-	sum_difference_by_round_0 = [0]*16
-	sum_difference_by_round_1 = [0]*16
-	sum_difference_by_round_2 = [0]*16
-	sum_difference_by_round_3 = [0]*16
+	sum_difference_variablePlaintext_0 = [0]*16
+	sum_difference_variablePlaintext_1 = [0]*16
+	sum_difference_variablePlaintext_2 = [0]*16
+	sum_difference_variablePlaintext_3 = [0]*16
 	for i in range(len(plaintext)):
 		difference_by_round = DES(plaintexts[i], key[0], 16,64,0,True,True)[1]
-		print(difference_by_round)
-		sum_difference_by_round_0 = SumArray(difference_by_round,sum_difference_by_round_0)
+		sum_difference_variablePlaintext_0 = SumArray(difference_by_round,sum_difference_variablePlaintext_0)
 	for i in range(len(plaintexts)):
 		difference_by_round = DES(plaintexts[i], key[0], 16,64,1,True,True)[1]
-		sum_difference_by_round_1 = SumArray(difference_by_round,sum_difference_by_round_1)	
+		sum_difference_variablePlaintext_1 = SumArray(difference_by_round,sum_difference_variablePlaintext_1)	
 	for i in range(len(plaintexts)):
 		difference_by_round = DES(plaintexts[i], key[0], 16,64,2,True,True)[1]
-		sum_difference_by_round_2 = SumArray(difference_by_round,sum_difference_by_round_2)
+		sum_difference_variablePlaintext_2 = SumArray(difference_by_round,sum_difference_variablePlaintext_2)
 	for i in range(len(plaintexts)):
 		difference_by_round = DES(plaintexts[i], key[0], 16,64,3,True,True)[1]
-		sum_difference_by_round_3 = SumArray(difference_by_round,sum_difference_by_round_3)
+		sum_difference_variablePlaintext_3 = SumArray(difference_by_round,sum_difference_variablePlaintext_3)
 	# Average all of the values 
-	print(sum_difference_by_round_0) 
+	 
 	for i in range(16):
-		sum_difference_by_round_0[i] = sum_difference_by_round_0[i]/len(plaintexts)
-		sum_difference_by_round_1[i] = sum_difference_by_round_1[i]/len(plaintexts)
-		sum_difference_by_round_2[i] = sum_difference_by_round_2[i]/len(plaintexts)
-		sum_difference_by_round_3[i] = sum_difference_by_round_3[i]/len(plaintexts)
+		sum_difference_variablePlaintext_0[i] = sum_difference_variablePlaintext_0[i]/len(plaintexts)
+		sum_difference_variablePlaintext_1[i] = sum_difference_variablePlaintext_1[i]/len(plaintexts)
+		sum_difference_variablePlaintext_2[i] = sum_difference_variablePlaintext_2[i]/len(plaintexts)
+		sum_difference_variablePlaintext_3[i] = sum_difference_variablePlaintext_3[i]/len(plaintexts)
 
 	# With different Keys 
-	key_diff_0 = [0]*16
-	key_diff_1 = [0]*16
-	key_diff_2 = [0]*16
-	key_diff_3 = [0]*16
+	sum_difference_variableKey_0 = [0]*16
+	sum_difference_variableKey_1 = [0]*16
+	sum_difference_variableKey_2 = [0]*16
+	sum_difference_variableKey_3 = [0]*16
 	for i in range(len(plaintexts)):
 		difference_by_round = DES(plaintexts[0], key[i], 16,64,0,True,True)[1]
-		key_diff_0 = SumArray(difference_by_round,key_diff_0)
+		sum_difference_variableKey_0 = SumArray(difference_by_round,sum_difference_variableKey_0)
 	for i in range(len(plaintexts)):
-		diff = DES(plaintexts[0], key[i], 16,64,1,True,True)[1]
-		key_diff_1 = SumArray(difference_by_round,key_diff_1)	
+		difference_by_round = DES(plaintexts[0], key[i], 16,64,1,True,True)[1]
+		sum_difference_variableKey_1 = SumArray(difference_by_round,sum_difference_variableKey_1)	
 	for i in range(len(plaintexts)):
 		difference_by_round = DES(plaintexts[0], key[i], 16,64,2,True,True)[1]
-		key_diff_2 = SumArray(difference_by_round,key_diff_2)
+		sum_difference_variableKey_2 = SumArray(difference_by_round,sum_difference_variableKey_2)
 	for i in range(len(plaintexts)):
 		difference_by_round = DES(plaintexts[0], key[i], 16,64,3,True,True)[1]
-		key_diff_3 = SumArray(difference_by_round,key_diff_3)
+		sum_difference_variableKey_3 = SumArray(difference_by_round,sum_difference_variableKey_3)
 
 	for i in range(16):
-		key_diff_0[i] = key_diff_0[i]/len(plaintexts)
-		key_diff_1[i] = key_diff_1[i]/len(plaintexts)
-		key_diff_2[i] = key_diff_2[i]/len(plaintexts)
-		key_diff_3[i] = key_diff_3[i]/len(plaintexts)		
+		sum_difference_variableKey_0[i] = sum_difference_variableKey_0[i]/len(plaintexts)
+		sum_difference_variableKey_1[i] = sum_difference_variableKey_1[i]/len(plaintexts)
+		sum_difference_variableKey_2[i] = sum_difference_variableKey_2[i]/len(plaintexts)
+		sum_difference_variableKey_3[i] = sum_difference_variableKey_3[i]/len(plaintexts)		
 
 	
 	print("\n\nP and Pi under K\nRound        DES0    DES1    DES2    DES3")
 	for i in range(16):
-		print("   ",i,"      ",round(sum_difference_by_round_0[i],3), "   ",round(sum_difference_by_round_1[i],3),"   ",round(sum_difference_by_round_2[i],3),"   ", round(sum_difference_by_round_3[i],3))
+		print("   ",i,"      ",round(sum_difference_variablePlaintext_0[i],3), "   ",round(sum_difference_variablePlaintext_1[i],3),"   ",round(sum_difference_variablePlaintext_2[i],3),"   ", round(sum_difference_variablePlaintext_3[i],3))
 	print("\n\nP under K and Ki\nRound        DES0    DES1    DES2    DES3")
 	for i in range(16):
-		print("   ",i,"      ",round(key_diff_0[i],3), "   ",round(key_diff_1[i],3),"   ",round(key_diff_2[i],3),"   ", round(key_diff_3[i],3))
+		print("   ",i,"      ",round(sum_difference_variableKey_0[i],3), "   ",round(sum_difference_variableKey_1[i],3),"   ",round(sum_difference_variableKey_2[i],3),"   ", round(sum_difference_variableKey_3[i],3))
 
 	return
 
@@ -366,15 +367,17 @@ print("ENCRYPTION")
 print("Plaintext P:  " +  plaintext)
 print("Key K:        " + key)
 start = time.perf_counter()
-print("Ciphertext C: " + DES(plaintext,key,16,64)[0])
-
+ciphertext = DES(plaintext,key,16,64)[0]
 end = time.perf_counter()
+print("Ciphertext C: " + ciphertext)
+recoveredPlaintext = DES( ciphertext , key,16,64,0,False,False)[0]
+print("Recovered P:  " + recoveredPlaintext)
+
 print("Running time: ",end - start, "seconds" )
 
 
-print("DECRYPTED ? ",plaintext == DES( DES(plaintext,key,16,64,0,True,False)[0] , key,16,64,0,False,False))
+print("DECRYPTED ? ",plaintext == recoveredPlaintext)
 
-print(DES(plaintext,key,16,64,1,True,False)[2])
 AvalancheAnalysis(text_permutations,key_permutations)
 
 
