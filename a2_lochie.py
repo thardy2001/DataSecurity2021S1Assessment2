@@ -271,11 +271,13 @@ plain_perms, key_perms = generate_permutations(plaintext, key)
 # perform all avalanche tests
 diffs = [full_avalanche(plain_perms, key_perms, i) for i in range(4)]
 
+# print results from varying plaintext avalanche tests
 print("\nP and Pi under K", file=output)
 print(columnar(["Round", "DES0", "DES1", "DES2", "DES3"]), file=output)
 for i in range(len(diffs[0][0])):
     print(columnar([i, round(diffs[0][0][i]), round(diffs[1][0][i]), round(diffs[2][0][i]), round(diffs[3][0][i])]), file=output)
 
+# print results from varying key avalanche tests
 print("\nP under K and Ki", file=output)
 print(columnar(["Round", "DES0", "DES1", "DES2", "DES3"]), file=output)
 for i in range(len(diffs[0][1])):
@@ -283,7 +285,7 @@ for i in range(len(diffs[0][1])):
 
 output.close()
 
-# read plaintext and key
+# read ciphertext and key
 input = open("input_decrypt.txt", "r")
 in_decrypt = input.readline().rstrip("\n")
 key = input.readline().rstrip("\n")
