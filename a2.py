@@ -3,7 +3,7 @@ Authors: Tyler Hardy	Lachlan Westfall
 Creation Date: 11/04/21
 Purpose: An implementation of DES and experimentation with analysis of its internal features 
 '''
-
+import time
 
 left_shift_table = [1,1,2,2,2,2,2,2,1,2,2,2,2,2,2,1]
 
@@ -26,11 +26,7 @@ expansion_permute =[
 						20,21,22,23,24,25,
 						24,25,26,27,28,29,
 						28,29,30,31,32, 1      ]
-inverse_expansion_permute = [		
-						 2, 3, 4, 5, 6, 9,10,11,
-						12,15,16,17,18,21,22,23,
-						24,27,28,29,30,33,34,35,
-						36,39,40,41,42,45,46, 1		]
+inverse_expansion_permute = [2, 3, 4, 5, 8, 9, 10, 11, 14, 15, 16, 17, 20, 21, 22, 23, 26, 27, 28, 29, 32, 33, 34, 35, 38, 39, 40, 41, 44, 45, 46, 47]
 compression_permute =[ 	
 						14,17,11,24, 1, 5, 3,28,
 						15, 6,21,10,23,19,12, 4,
@@ -100,7 +96,7 @@ def XOR(x,y):
 			result+= "0"
 		else:
 			result+="1"
-	#print("				   XOR: 						  	  " + result)
+
 	return result
 
 def leftShift(number, shifts):
@@ -108,6 +104,33 @@ def leftShift(number, shifts):
 	left_shifted = number[shifts:] + first_n
 	return left_shifted
 
+
+def SumArray(x,y):
+	new = [None]*len(x)
+	for i in range(len(x)):
+		new[i] = x[i] + y[i]
+	return new
+
+def calculateDifference(p,after):
+	temp = XOR(p,after)
+	difference = 0
+	for i in range(len(p)):
+		if(temp[i] == "1"):
+			difference+=1
+	return difference 
+
+def generateBitVariations(x):
+	new_strings = [None]*(len(x) + 1)
+	new_strings[0] = x
+	for i in range(len(x)):
+		if(x[i] == "1"):
+			new_strings[i+1] = x[0:i] + "0" + x[i+1:len(x)]
+		else:
+			new_strings[i+1] = x[0:i] + "1" + x[i+1:len(x)]
+
+	return new_strings
+
+		
 ''' END UTILITY FUNCTIONS '''
  
 
@@ -119,7 +142,6 @@ def compressionPermute(uncompressed):
 		x = compression_permute[i] - 1
 		compressed+= uncompressed[x]
 
-	#print("				   Compression permutation: 	      " + compressed)
 	return compressed 
 
 def expansionPermute(unexpanded):
@@ -128,7 +150,6 @@ def expansionPermute(unexpanded):
 		x = expansion_permute[i] - 1
 		expanded+=unexpanded[x]
 
-	#print("				   Expansion permutation: 		  	  " + expanded)
 	return expanded
 
 def inverseExpansionPermute(original):
@@ -136,7 +157,6 @@ def inverseExpansionPermute(original):
 	for i in range(32):
 		permuted+=original[inverse_expansion_permute[i] - 1]
 
-	#print("		 Inverse Expansion Permute: 				  " + permuted)
 	return permuted
 
 def straightPermute(original):
@@ -144,7 +164,7 @@ def straightPermute(original):
 	for i in range(32):
 		permuted+=original[straight_permute[i] - 1]
 
-	#print("				   Straight Permute: 				 " + permuted)
+
 	return permuted
 
 def initialPermute(original):
@@ -152,7 +172,7 @@ def initialPermute(original):
 	for i in range(64):
 		permuted+=original[initial_permute[i] - 1]
 
-	#print("				   Initial permutation: 		  	 " + permuted)
+
 	return permuted
 
 def finalPermute(original):
@@ -160,7 +180,6 @@ def finalPermute(original):
 	for i in range(64):
 		permuted+=original[final_permute[i] - 1]
 
-	#print("				   Final permutation: 		    	 " + permuted)
 	return permuted
 
 def parityDrop(key):
@@ -168,7 +187,6 @@ def parityDrop(key):
 	for i in range(56) :
 		new_key+= key[parity_bit_drop_table[i] - 1]
 
-	#print("				   Parity Drop: 		       	     " + new_key)
 	return new_key 
 
 def sBox(value): 
@@ -179,7 +197,6 @@ def sBox(value):
 		column = int(numbers[i][1:-1], base = 2) 
 		output+= IntToBinary(sboxes[i][row][column], 4) 
 
-	#print("				   SBOX: 						  	  " + output)
 	return output
 
 
@@ -204,8 +221,27 @@ def DESKeyGenerator(seed_key):
 def FDES0(key, right_text): # Standard DES 
 	return straightPermute(sBox(XOR(expansionPermute(right_text),key)))
 
-def DES0(p, k, num_of_rounds, block_size,encrypt = True ): 
-	 
+
+def FDES1(key, right_text): # Removed XOR with the round key 
+	return straightPermute(sBox(expansionPermute(right_text)))
+
+
+def FDES2(key, right_text): # S-Boxes are replaced with an inverse of the expansion permutation
+	return straightPermute(inverseExpansionPermute(XOR(expansionPermute(right_text),key)))
+
+
+def FDES3(key, right_text): # Removed straight permutation 
+	return sBox(XOR(expansionPermute(right_text),key))
+
+
+
+def DES(p, k, num_of_rounds, block_size, ver=0, encrypt=True, avalanche=False):
+	partial_ciphers = [None]*16
+	partial = [None]*16
+	if(avalanche):
+		partial = DES(p,k,num_of_rounds, ver, True, False)[2]
+
+
 	round_keys = DESKeyGenerator(k)
 	if not encrypt:
 		round_keys = round_keys[::-1]
@@ -214,64 +250,28 @@ def DES0(p, k, num_of_rounds, block_size,encrypt = True ):
 	left = p[:len(p)//2]
 	right = p[len(p)//2:]
 
-	# Rounds
+	round_diff = [None]*16
+
+	# Rounds 
 	for i in range(num_of_rounds):
 		round_key = round_keys[i]
 		temp = right 
-		right = XOR(left,FDES0(round_key, right))
-		left = temp 
 
-	# Final Swap to ensure encrypt = decrypt 
-	temp = left
-	left = right
-	right = temp 
+		if(ver == 0):
+			right = XOR(left,FDES0(round_key, right))
+		elif(ver == 1):
+			right = XOR(left,FDES1(round_key, right))
+		elif(ver == 2):
+			right = XOR(left,FDES2(round_key, right))
+		else:
+			right = XOR(left,FDES3(round_key, right))	
 
-	output = finalPermute(left + right)
-	return output
+		left = temp
+		partial_ciphers[i] = left+right
 
-def FDES1(key, right_text): # Removed XOR with the round key 
-	return straightPermute(sBox(expansionPermute(right_text)))
-
-def DES1(p, k, num_of_rounds, block_size ): 
-
-	round_keys = DESKeyGenerator(k)
-
-	p = initialPermute(p)
-	left = p[:len(p)//2]
-	right = p[len(p)//2:]
-
-	# Rounds 
-	for i in range(num_of_rounds): 
-		round_key = round_keys[i]
-		temp = right
-		right = XOR(left,FDES1(round_key, right))
-		left = temp 
-
-	# Final Swap to ensure encrypt = decrypt 
-	temp = left
-	left = right
-	right = temp 
-	
-	output = finalPermute(left+right)
-	return output
-
-def FDES2(key, right_text): # S-Boxes are replaced with an inverse of the expansion permutation
-	return straightPermute(inverseExpansionPermute(XOR(expansionPermute(right_text),key)))
-
-def DES2(p, k, num_of_rounds, block_size ):
-
-	round_keys = DESKeyGenerator(k)
-
-	p = initialPermute(p)
-	left = p[:len(p)//2]
-	right = p[len(p)//2:]
-
-	# Rounds 
-	for i in range(num_of_rounds):
-		round_key = round_keys[i]
-		temp = right
-		right = XOR(left,FDES2(round_key, right))
-		left = temp 
+		if(avalanche):
+			
+			round_diff[i] = calculateDifference(partial[i],(left+right))
 	
 	# Final Swap to ensure encrypt = decrypt 
 	temp = left
@@ -279,37 +279,77 @@ def DES2(p, k, num_of_rounds, block_size ):
 	right = temp 
 	
 	output = finalPermute(left+right)
-	return output
+ 	
+	return output, round_diff,partial_ciphers
 
 
-def FDES3(key, right_text): # Removed straight permutation 
-	return sBox(XOR(expansionPermute(right_text),key))
 
-def DES3(p, k, num_of_rounds, block_size ): 
+def AvalancheAnalysis(plaintexts,key):
 
-	round_keys = DESKeyGenerator(k)
+	# With different plaintexts
+	sum_difference_by_round_0 = [0]*16
+	sum_difference_by_round_1 = [0]*16
+	sum_difference_by_round_2 = [0]*16
+	sum_difference_by_round_3 = [0]*16
+	for i in range(len(plaintext)):
+		difference_by_round = DES(plaintexts[i], key[0], 16,64,0,True,True)[1]
+		print(difference_by_round)
+		sum_difference_by_round_0 = SumArray(difference_by_round,sum_difference_by_round_0)
+	for i in range(len(plaintexts)):
+		difference_by_round = DES(plaintexts[i], key[0], 16,64,1,True,True)[1]
+		sum_difference_by_round_1 = SumArray(difference_by_round,sum_difference_by_round_1)	
+	for i in range(len(plaintexts)):
+		difference_by_round = DES(plaintexts[i], key[0], 16,64,2,True,True)[1]
+		sum_difference_by_round_2 = SumArray(difference_by_round,sum_difference_by_round_2)
+	for i in range(len(plaintexts)):
+		difference_by_round = DES(plaintexts[i], key[0], 16,64,3,True,True)[1]
+		sum_difference_by_round_3 = SumArray(difference_by_round,sum_difference_by_round_3)
+	# Average all of the values 
+	print(sum_difference_by_round_0) 
+	for i in range(16):
+		sum_difference_by_round_0[i] = sum_difference_by_round_0[i]/len(plaintexts)
+		sum_difference_by_round_1[i] = sum_difference_by_round_1[i]/len(plaintexts)
+		sum_difference_by_round_2[i] = sum_difference_by_round_2[i]/len(plaintexts)
+		sum_difference_by_round_3[i] = sum_difference_by_round_3[i]/len(plaintexts)
 
-	p = initialPermute(p)
-	left = p[:len(p)//2]
-	right = p[len(p)//2:]
+	# With different Keys 
+	key_diff_0 = [0]*16
+	key_diff_1 = [0]*16
+	key_diff_2 = [0]*16
+	key_diff_3 = [0]*16
+	for i in range(len(plaintexts)):
+		difference_by_round = DES(plaintexts[0], key[i], 16,64,0,True,True)[1]
+		key_diff_0 = SumArray(difference_by_round,key_diff_0)
+	for i in range(len(plaintexts)):
+		diff = DES(plaintexts[0], key[i], 16,64,1,True,True)[1]
+		key_diff_1 = SumArray(difference_by_round,key_diff_1)	
+	for i in range(len(plaintexts)):
+		difference_by_round = DES(plaintexts[0], key[i], 16,64,2,True,True)[1]
+		key_diff_2 = SumArray(difference_by_round,key_diff_2)
+	for i in range(len(plaintexts)):
+		difference_by_round = DES(plaintexts[0], key[i], 16,64,3,True,True)[1]
+		key_diff_3 = SumArray(difference_by_round,key_diff_3)
+
+	for i in range(16):
+		key_diff_0[i] = key_diff_0[i]/len(plaintexts)
+		key_diff_1[i] = key_diff_1[i]/len(plaintexts)
+		key_diff_2[i] = key_diff_2[i]/len(plaintexts)
+		key_diff_3[i] = key_diff_3[i]/len(plaintexts)		
+
 	
-	# Rounds 
-	for i in range(num_of_rounds):
-		round_key = round_keys[i]
+	print("\n\nP and Pi under K\nRound        DES0    DES1    DES2    DES3")
+	for i in range(16):
+		print("   ",i,"      ",round(sum_difference_by_round_0[i],3), "   ",round(sum_difference_by_round_1[i],3),"   ",round(sum_difference_by_round_2[i],3),"   ", round(sum_difference_by_round_3[i],3))
+	print("\n\nP under K and Ki\nRound        DES0    DES1    DES2    DES3")
+	for i in range(16):
+		print("   ",i,"      ",round(key_diff_0[i],3), "   ",round(key_diff_1[i],3),"   ",round(key_diff_2[i],3),"   ", round(key_diff_3[i],3))
 
-		temp = right
-		right = XOR(left,FDES3(round_key, right))
-		left = temp 
-		
-	# Final Swap to ensure encrypt = decrypt 
-	temp = left
-	left = right
-	right = temp 
-	
-	output = finalPermute(left+right)
-	return output
+	return
 
+start = 0
+end = 0
 
+# Read in input file 
 file = open("input.txt", "r")
 plaintext = file.readline()
 key = file.readline()
@@ -317,21 +357,28 @@ file.close()
 plaintext = plaintext.rstrip("\n")
 key = key.rstrip("\n")
 
-print("DES0:\n")
-ciphertext = DES0(plaintext,key,16,64)
-print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:     " + ciphertext + "\n\n")
-plain_prime = DES0(ciphertext, key, 16, 64, False)
 
-print("DES1:\n")
-print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:     " + DES1(plaintext,key,16,64) + "\n\n")
-print("DES2:\n")
-print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:     " + DES2(plaintext,key,16,64) + "\n\n")
-print("DES3:\n")
-print("Plaintext:      " + plaintext + "\nEncryption Key: " + key + "\n" +  "Ciphertext:     " + DES3(plaintext,key,16,64) + "\n\n")
+text_permutations = generateBitVariations(plaintext)
+key_permutations = generateBitVariations(key)
 
-# optional debug code
-print("DES0 Checks")
-print("encryption successful: ", ciphertext == "0000111000011011110001011111000110001010001110110001101010001011")
-print("Decryption successful: ", plaintext == plain_prime)
-# end optional debug code
+
+print("ENCRYPTION")
+print("Plaintext P:  " +  plaintext)
+print("Key K:        " + key)
+start = time.perf_counter()
+print("Ciphertext C: " + DES(plaintext,key,16,64)[0])
+
+end = time.perf_counter()
+print("Running time: ",end - start, "seconds" )
+
+
+print("DECRYPTED ? ",plaintext == DES( DES(plaintext,key,16,64,0,True,False)[0] , key,16,64,0,False,False))
+
+print(DES(plaintext,key,16,64,1,True,False)[2])
+AvalancheAnalysis(text_permutations,key_permutations)
+
+
+
+
+
 
