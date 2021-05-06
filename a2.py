@@ -250,7 +250,7 @@ def DES(p, k, num_of_rounds, block_size, ver=0, encrypt=True, avalanche=False):
 
 	round_diff = [None]*17
 	round_diff[0] = calculateDifference(p,plaintext)
-	
+
 	p = initialPermute(p)
 	left = p[:len(p)//2]
 	right = p[len(p)//2:]
@@ -339,24 +339,24 @@ def AvalancheAnalysis(plaintexts,key):
 		sum_difference_variableKey_2[i] = sum_difference_variableKey_2[i]/len(plaintexts)
 		sum_difference_variableKey_3[i] = sum_difference_variableKey_3[i]/len(plaintexts)		
 
-	
-	print("\n\nP and Pi under K\nRound        DES0    DES1    DES2    DES3")
+	output=""
+	output+="\n\nP and Pi under K\nRound        DES0    DES1    DES2    DES3" + "\n"
 	for i in range(17):
-		print("   ",i,"      ",round(sum_difference_variablePlaintext_0[i],3), "   ",round(sum_difference_variablePlaintext_1[i],3),"   ",round(sum_difference_variablePlaintext_2[i],3),"   ", round(sum_difference_variablePlaintext_3[i],3))
-	print("\n\nP under K and Ki\nRound        DES0    DES1    DES2    DES3")
+		output+="   " + str(i) + "      " + str(round(sum_difference_variablePlaintext_0[i],3)) + "   " + str(round(sum_difference_variablePlaintext_1[i],3)) + "   " + str(round(sum_difference_variablePlaintext_2[i],3)) + "   " + str(round(sum_difference_variablePlaintext_3[i],3)) + "\n"
+	output+="\n\nP under K and Ki\nRound        DES0    DES1    DES2    DES3" + "\n"
 	for i in range(17):
-		print("   ",i,"      ",round(sum_difference_variableKey_0[i],3), "   ",round(sum_difference_variableKey_1[i],3),"   ",round(sum_difference_variableKey_2[i],3),"   ", round(sum_difference_variableKey_3[i],3))
+		output+="   " + str(i) + "      " + str(round(sum_difference_variableKey_0[i],3)) + "   " + str(round(sum_difference_variableKey_1[i],3)) + "   " + str(round(sum_difference_variableKey_2[i],3)) + "   " + str(round(sum_difference_variableKey_3[i],3)) + "\n"
 
-	return
+	return output
 
 start = 0
 end = 0
 
 # Read in input file 
-file = open("input.txt", "r")
-plaintext = file.readline()
-key = file.readline()
-file.close()
+input_file = open("input.txt", "r")
+plaintext = input_file.readline()
+key = input_file.readline()
+input_file.close()
 plaintext = plaintext.rstrip("\n")
 key = key.rstrip("\n")
 
@@ -364,23 +364,25 @@ key = key.rstrip("\n")
 text_permutations = generateBitVariations(plaintext)
 key_permutations = generateBitVariations(key)
 
+output_file = open("output.txt", "w")
 
-print("ENCRYPTION")
-print("Plaintext P:  " +  plaintext)
-print("Key K:        " + key)
+output_file.write("ENCRYPTION\n")
+output_file.write("Plaintext P:  " +  plaintext + "\n")
+output_file.write("Key K:        " + key + "\n")
 start = time.perf_counter()
 ciphertext = DES(plaintext,key,16,64)[0]
 end = time.perf_counter()
-print("Ciphertext C: " + ciphertext)
+output_file.write("Ciphertext C: " + ciphertext + "\n")
 recoveredPlaintext = DES( ciphertext , key,16,64,0,False,False)[0]
-print("Recovered P:  " + recoveredPlaintext)
-
-print("Running time: ",end - start, "seconds" )
 
 
-print("DECRYPTED ? ",plaintext == recoveredPlaintext)
+output_file.write("Running time: " + str(end - start) +  "seconds\n" )
 
-AvalancheAnalysis(text_permutations,key_permutations)
+
+
+
+output_file.write(AvalancheAnalysis(text_permutations,key_permutations))
+output_file.close()
 
 
 
