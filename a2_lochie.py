@@ -1,3 +1,8 @@
+'''
+Authors: Tyler Hardy	Lachlan Westfall
+Purpose: An implementation of DES and experimentation with analysis of its internal features
+'''
+
 import time
 
 # All permutation / substitution tables
