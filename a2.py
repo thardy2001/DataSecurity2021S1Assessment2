@@ -248,11 +248,14 @@ def DES(p, k, num_of_rounds, block_size, ver=0, encrypt=True, avalanche=False):
 	if not encrypt:
 		round_keys = round_keys[::-1]
 
+	round_diff = [None]*17
+	round_diff[0] = calculateDifference(p,plaintext)
+	
 	p = initialPermute(p)
 	left = p[:len(p)//2]
 	right = p[len(p)//2:]
 
-	round_diff = [None]*16
+
 
 	# Rounds 
 	for i in range(num_of_rounds):
@@ -272,9 +275,7 @@ def DES(p, k, num_of_rounds, block_size, ver=0, encrypt=True, avalanche=False):
 		partial_ciphers[i] = left+right
 
 		if(avalanche):
-			
-			round_diff[i] = calculateDifference(partial[i],(left+right))
-	
+			round_diff[i+1] = calculateDifference(partial[i],(left+right))
 	# Final Swap to ensure encrypt = decrypt 
 	temp = left
 	left = right
@@ -289,12 +290,14 @@ def DES(p, k, num_of_rounds, block_size, ver=0, encrypt=True, avalanche=False):
 def AvalancheAnalysis(plaintexts,key):
 
 	# With different plaintexts
-	sum_difference_variablePlaintext_0 = [0]*16
-	sum_difference_variablePlaintext_1 = [0]*16
-	sum_difference_variablePlaintext_2 = [0]*16
-	sum_difference_variablePlaintext_3 = [0]*16
+	sum_difference_variablePlaintext_0 = [0]*17
+	sum_difference_variablePlaintext_1 = [0]*17
+	sum_difference_variablePlaintext_2 = [0]*17
+	sum_difference_variablePlaintext_3 = [0]*17
+
 	for i in range(len(plaintext)):
 		difference_by_round = DES(plaintexts[i], key[0], 16,64,0,True,True)[1]
+		print(difference_by_round)
 		sum_difference_variablePlaintext_0 = SumArray(difference_by_round,sum_difference_variablePlaintext_0)
 	for i in range(len(plaintexts)):
 		difference_by_round = DES(plaintexts[i], key[0], 16,64,1,True,True)[1]
@@ -307,17 +310,16 @@ def AvalancheAnalysis(plaintexts,key):
 		sum_difference_variablePlaintext_3 = SumArray(difference_by_round,sum_difference_variablePlaintext_3)
 	# Average all of the values 
 	 
-	for i in range(16):
+	for i in range(17):
 		sum_difference_variablePlaintext_0[i] = sum_difference_variablePlaintext_0[i]/len(plaintexts)
 		sum_difference_variablePlaintext_1[i] = sum_difference_variablePlaintext_1[i]/len(plaintexts)
 		sum_difference_variablePlaintext_2[i] = sum_difference_variablePlaintext_2[i]/len(plaintexts)
 		sum_difference_variablePlaintext_3[i] = sum_difference_variablePlaintext_3[i]/len(plaintexts)
-
 	# With different Keys 
-	sum_difference_variableKey_0 = [0]*16
-	sum_difference_variableKey_1 = [0]*16
-	sum_difference_variableKey_2 = [0]*16
-	sum_difference_variableKey_3 = [0]*16
+	sum_difference_variableKey_0 = [0]*17
+	sum_difference_variableKey_1 = [0]*17
+	sum_difference_variableKey_2 = [0]*17
+	sum_difference_variableKey_3 = [0]*17
 	for i in range(len(plaintexts)):
 		difference_by_round = DES(plaintexts[0], key[i], 16,64,0,True,True)[1]
 		sum_difference_variableKey_0 = SumArray(difference_by_round,sum_difference_variableKey_0)
@@ -331,7 +333,7 @@ def AvalancheAnalysis(plaintexts,key):
 		difference_by_round = DES(plaintexts[0], key[i], 16,64,3,True,True)[1]
 		sum_difference_variableKey_3 = SumArray(difference_by_round,sum_difference_variableKey_3)
 
-	for i in range(16):
+	for i in range(17):
 		sum_difference_variableKey_0[i] = sum_difference_variableKey_0[i]/len(plaintexts)
 		sum_difference_variableKey_1[i] = sum_difference_variableKey_1[i]/len(plaintexts)
 		sum_difference_variableKey_2[i] = sum_difference_variableKey_2[i]/len(plaintexts)
@@ -339,10 +341,10 @@ def AvalancheAnalysis(plaintexts,key):
 
 	
 	print("\n\nP and Pi under K\nRound        DES0    DES1    DES2    DES3")
-	for i in range(16):
+	for i in range(17):
 		print("   ",i,"      ",round(sum_difference_variablePlaintext_0[i],3), "   ",round(sum_difference_variablePlaintext_1[i],3),"   ",round(sum_difference_variablePlaintext_2[i],3),"   ", round(sum_difference_variablePlaintext_3[i],3))
 	print("\n\nP under K and Ki\nRound        DES0    DES1    DES2    DES3")
-	for i in range(16):
+	for i in range(17):
 		print("   ",i,"      ",round(sum_difference_variableKey_0[i],3), "   ",round(sum_difference_variableKey_1[i],3),"   ",round(sum_difference_variableKey_2[i],3),"   ", round(sum_difference_variableKey_3[i],3))
 
 	return
